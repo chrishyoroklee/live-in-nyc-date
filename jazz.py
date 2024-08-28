@@ -1,8 +1,14 @@
 from bs4 import BeautifulSoup
+from datetime import datetime
 import requests
 import json
-events = []
+import re
 
+events = {}
+# Get the current date and time
+now = datetime.now()
+current_year = now.year
+current_month = now.month
 #blue note nyc
 bluenote_text = requests.get('https://www.bluenotejazz.com/nyc/shows/?calendar_view').text
 bluenote_soup = BeautifulSoup(bluenote_text, 'lxml')
@@ -17,27 +23,31 @@ for show in bluenote_shows:
 
     bluenote_day = show.find('div', class_='day')
     if bluenote_day:
-        bluenote_day = bluenote_day.text.strip()
+        day = bluenote_day.text.strip().zfill(2)
+        bluenote_day = f'{current_year}-{current_month:02d}-{day}'
     else:
         bluenote_day = "No date info"
 
     bluenote_showtime = show.find('div', class_='showtimes')
     if bluenote_showtime:
-        bluenote_showtime = bluenote_showtime.text.strip()
+        showtimes = re.findall(r'\d{1,2}:\d{2} [APM]{2}', bluenote_showtime.text)
+        bluenote_showtime = ' & '.join(showtimes)
     else:
         bluenote_showtime = "No showtime info"
     
     event = {
         'band': bluenote_band,
-        'venue': 'Blue Note NYC',
         'date': bluenote_day,
         'time': bluenote_showtime,
         'link': 'https://www.bluenotejazz.com/nyc/shows/?calendar_view',
         'category': 'Music',
         'genre': 'Jazz'
     }
-    
-    events.append(event)
+    if bluenote_day not in events:
+        events[bluenote_day] = {}
+    if 'Blue Note NYC' not in events[bluenote_day]:
+        events[bluenote_day]['Blue Note NYC'] = []
+    events[bluenote_day]['Blue Note NYC'].append(event)
 
 
 # #smalls and mezzrow
@@ -73,34 +83,35 @@ for show in bluenote_shows:
 # #NEED TO ADD DATES!
 # # print(events)
 
-#village vanguard
-vanguard_text = requests.get('https://villagevanguard.com/').text
-vanguard_soup = BeautifulSoup(vanguard_text, 'lxml')
-vanguard_shows = vanguard_soup.find_all('div', 'event-listing')
+# #village vanguard
+# vanguard_text = requests.get('https://villagevanguard.com/').text
+# vanguard_soup = BeautifulSoup(vanguard_text, 'lxml')
+# vanguard_shows = vanguard_soup.find_all('div', 'event-listing')
 
-for show in vanguard_shows:
-    band = show.find('h2')
-    if band:
-        band = band.text.strip()
-    else:
-        band = "No band information"
-    date = show.find('h3')
-    if date:
-        date = date.text.strip()
-    else:
-        date = "No band information"
-    event = {
-        'band': band,
-        'venue': 'Village Vanguard',
-        'date': date,
-        'link': 'https://villagevanguard.com/',
-        'category': 'Music',
-        'genre': 'Jazz'
-    }
-    
-    events.append(event)
+# for show in vanguard_shows:
+#     band = show.find('h2')
+#     if band:
+#         band = band.text.strip()
+#     else:
+#         band = "No band information"
+#     date = show.find('h3')
+#     if date:
+#         date = date.text.strip()
+#     else:
+#         date = "No band information"
+#     event = {
+#         'band': band,
+#         'venue': 'Village Vanguard',
+#         'date': date,
+#         'link': 'https://villagevanguard.com/',
+#         'category': 'Music',
+#         'genre': 'Jazz'
+#     }
+#     if 'Village Vanguard' not in events:
+#         events['Village Vanguard'] = []
+#     events['Village Vanguard'].append(event)
 
-with open('jazz_events.json', 'w') as json_file:
+with open('JazzData.json', 'w') as json_file:
     json.dump(events, json_file, indent=4)
 
 print("JSON file created successfully.")
