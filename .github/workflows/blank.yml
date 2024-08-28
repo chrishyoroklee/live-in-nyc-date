@@ -1,0 +1,33 @@
+name: Scrape Jazz Events
+
+on:
+  schedule:
+    # Runs the script every Monday at 00:00 UTC
+    - cron: '0 0 * * MON'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository content
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: pip install requests beautifulsoup4 lxml
+
+    - name: Run scraping script
+      run: python jazz.py
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Update JSON with latest jazz events"
+        git push
